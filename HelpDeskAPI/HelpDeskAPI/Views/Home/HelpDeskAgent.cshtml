@@ -1,0 +1,226 @@
+﻿
+@{
+	ViewBag.Title = "HelpDeskAgent";
+}
+
+<h2>HelpDeskAgent</h2>
+<html>
+<head>
+	
+	<meta name="viewport" content="width=device-width" />
+	<title>HelpDeskAgent</title>
+	<link href="../../Scripts/bootstrap.min.css" rel="stylesheet" />
+	<script src="../../Scripts/jquery-3.3.1.min.js"></script>
+	<script src="../../Scripts/bootstrap.min.js"></script>
+	
+	<style>
+		#itemTable {
+			font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+			border-collapse: collapse;
+			width: 100%;
+		}
+
+			#itemTable tr:nth-child(even) {
+				background-color: #f2f2f2;
+			}
+
+			#itemTable tr:hover {
+				background-color: #ddd;
+			}
+
+			#itemTable th {
+				padding-top: 12px;
+				padding-bottom: 12px;
+				text-align: left;
+				background-color: #4CAF50;
+				color: white;
+			}
+	</style>
+	
+		<script>
+
+
+			$(document).ready(function () {
+				getItemList();
+			});
+
+			var WorkItem = {
+				ID: 0,
+				Title: "",
+				Status: "",
+				CreatedDate: "",
+				CompletedDate: "",
+			}
+
+			// Get all Employees to display
+			function getItemList() {
+				// Call Web API to get a list of Employees
+				$.ajax({
+					url: '/api/WorkItems/',
+					type: 'GET',
+					dataType: 'json',
+					success: function (items) {
+						$("#itemTable tbody").remove();
+						itemListSuccess(items);
+					},
+					error: function (request, message, error) {
+						handleException(request, message, error);
+					}
+				});
+			}
+
+			// Display all Employees returned from Web API call
+			function itemListSuccess(items) {
+				// Iterate over the collection of data
+				$("#itemTable tbody").remove();
+				$.each(items, function (index, item) {
+					// Add a row to the employee table
+					itemAddRow(item);
+				});
+			}
+
+			// Add employee row to <table>
+			function itemAddRow(item) {
+				// First check if a <tbody> tag exists, add one if not
+				if ($("#itemTable tbody").length == 0) {
+					$("#itemTable").append("<tbody></tbody>");
+				}
+
+				// Append row to <table>
+				$("#itemTable tbody").append(
+					itemBuildTableRow(item));
+			}
+
+			// Build a <tr> for a row of table data
+			function itemBuildTableRow(item) {
+				var items =
+					"<tr>"
+					+ "<td>" + item.ID + "</td>"
+					+ "<td>" + item.Title + "</td>"
+					+ "<td>" + item.Status + "</td>"
+					+ "<td>" + item.CreatedDate + "</td>"
+					+ "<td>" + item.CompletedDate + "</td>"
+					+ "<td>" +
+					"<button data-id='" + item.ID + "' class='btnDelete btn btn-danger btn-sm' type='button' >Delete</button>"
+					+ "</td>"
+					+ "</tr>";
+				return items;
+			}
+
+
+			// Handle exceptions from AJAX calls
+			function handleException(request, message, error) {
+				var msg = "";
+				msg += "Code: " + request.status + "\n";
+				msg += "Text: " + request.statusText + "\n";
+				if (request.responseJSON != null) {
+					msg += "Message" + request.responseJSON.Message + "\n";
+				}
+
+				alert(msg);
+			}
+
+			var WorkItem = { ID: 0, Title: "", Status: "", CreatedDate: "", CompletedDate: "", }
+
+			function addItem(item) {
+				var options = {};
+				options.url = "/api/WorkItems/";
+				options.type = "POST";
+				options.contentType = "application/json;charset=utf-8";
+				options.dataType = "html";
+				var obj = WorkItem;
+				obj.Title = $("#Title").val();
+				obj.Status = $("#Status").val();
+				obj.CreatedDate = $("#CreatedDate").val();
+				obj.CompletedDate = $("#CompletedDate").val();
+				console.dir(obj);
+				options.data = JSON.stringify(obj);
+				options.success = function (msg) {
+					getItemList();
+					document.getElementById('Title').value = '';
+					document.getElementById('Status').value = '';
+					document.getElementById('CreatedDate').value = '';
+					document.getElementById('CompletedDate').value = '';
+
+					$("#msg").css("color", "green");
+					$("#msg").html("Đã thêm thành công");
+				},
+					options.error = function () {
+					$("#msg").css("color", "red");
+					$("#msg").css("text -align: center").html("Đã xảy ra lỗi. Vui lòng kiểm tra lại thông tin nhập vào!");
+					};
+				$.ajax(options);
+			}
+
+			function deleteRows() {
+				var dataid = $('.btnDelete').attr('data-id');
+				$('.btnDelete').click(function (e) {
+					e.preventDefault();
+					swal({
+						title: "Are you sure?",
+						text: "Are you sure to delete this record?",
+						type: "warning",
+						showCancelButton: true,
+						confirmButtonColor: "#DD6B55",
+						confirmButtonText: "Yes, delete it!",
+						closeOnConfirm: false
+					},
+						function (isConfirmed) {
+							if (isConfirmed) {
+								//$(".file").addClass("isDeleted");
+								$.ajax({
+									url: "/api/WorkItems/" + dataid,
+									type: "Delete",
+									contentType: "application/json",
+									success: function () {
+										swal("Deleted!", "Your record has been deleted.", "success");
+										location.reload();
+									},
+									error: function () {
+									}
+								});
+
+							}
+						}
+					);
+				});
+			}
+			$('.btnEdit').click(function () {
+
+				var dataid = $('.btnDelete').attr('data-id');
+				showEdit(dataid);
+			});
+
+		</script>
+
+</head>
+<body >
+	<div class="container" >
+		<button class="btn btn-success" data-toggle='modal' data-target='#myModal'>Add WorkItems</button>
+		<p style="font-size:18px" id="msg"></p>
+		<div style="text-align:center;border: 1px solid #ddd;padding: 15px 20px 15px 20px;margin-top:30px">
+			<div>
+				<form>
+					<table class="table table-bordered" id="itemTable">
+						<thead >
+							<tr style="font-size:17px;font-weight:bold">
+								<th> Id </th>
+								<th> Title </th>
+								<th> Status </th>
+								<th> Created Date </th>
+								<th> Completed Date </th>
+								<!--
+									<th> Delete</th>
+								-->
+							</tr>							
+						</thead>
+					</table>
+				</form>
+			</div>
+		</div>
+	</div>	
+</body>
+</html>
+
+
+@RenderPage("Add.cshtml")
